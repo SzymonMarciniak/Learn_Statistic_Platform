@@ -157,14 +157,19 @@ class DataAnalysisApp:
         self.configure_plot()
 
     def create_right_panel(self):
-        self.right_panel = ttk.Frame(self.body_frame, width=500)
-        self.right_panel.grid(row=0, column=2, sticky="nsew", padx=0, pady=5)
+        # Tworzenie prawego panelu o stałej szerokości
+        self.right_panel = ttk.Frame(self.body_frame, width=200)  # Stała szerokość panelu
+        self.right_panel.grid(row=0, column=2, sticky="nsew", padx=5, pady=5)
+        self.right_panel.grid_propagate(False)  # Wyłączenie automatycznego dostosowania
 
         # Dodajemy pusty Label, aby przesunąć opis w dół
-        ttk.Label(self.right_panel, text=" ", background=Colors.PANEL_BG).pack(pady=45)
+        ttk.Label(self.right_panel, text=" ", background=Colors.PANEL_BG).grid(row=0, sticky="n")
 
-        self.description_label = ttk.Label(self.right_panel, text="Wybierz miarę, aby zobaczyć opis.", wraplength=300, justify=tk.LEFT)
-        self.description_label.pack(padx=0, pady=10)
+        # Etykieta dla opisu z wraplength, aby zapobiec zmianom szerokości
+        self.description_label = ttk.Label(self.right_panel, text="Wybierz miarę, aby zobaczyć opis.", wraplength=180, justify=tk.LEFT)
+        self.description_label.grid(row=1, sticky="nsew", padx=10, pady=10)
+        self.right_panel.grid_rowconfigure(1, weight=1)  # Rozciąganie wiersza dla opisu
+
 
     def create_footer(self):
         # Tworzenie kontenera dla stopki
