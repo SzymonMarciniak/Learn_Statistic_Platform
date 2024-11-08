@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
+import pandas as pd
 import yaml
 
 # Klasa przechowująca kolory aplikacji
@@ -24,13 +25,7 @@ class DataAnalysisApp:
         self.root.configure(bg=Colors.BACKGROUND)
 
         # Ustawienia stylu (ciemny motyw)
-        style = ttk.Style()
-        style.theme_use("clam")
-        style.configure("TFrame", background=Colors.PANEL_BG)
-        style.configure("TButton", background=Colors.BUTTON_BG, foreground=Colors.BUTTON_FG, padding=5)
-        style.configure("TLabel", background=Colors.PANEL_BG, foreground=Colors.TEXT_FG)
-        style.configure("TCombobox", fieldbackground=Colors.COMBOBOX_BG, foreground=Colors.COMBOBOX_FG, borderwidth=0)
-        style.map("TCombobox", fieldbackground=[("readonly", Colors.COMBOBOX_BG)], selectbackground=[("readonly", Colors.COMBOBOX_BG)])
+        self.configure_styles()
 
         # Ładowanie opisów z pliku YAML
         self.load_descriptions()
@@ -61,6 +56,30 @@ class DataAnalysisApp:
         # Tworzenie stopki (footer)
         self.create_footer()
 
+    def configure_styles(self):
+        # Ustawienie stylu dla aplikacji
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("TFrame", background=Colors.PANEL_BG)
+        style.configure("TButton", background=Colors.BUTTON_BG, foreground=Colors.BUTTON_FG, padding=5)
+        style.configure("TLabel", background=Colors.PANEL_BG, foreground=Colors.TEXT_FG)
+        style.configure("TCombobox", fieldbackground=Colors.COMBOBOX_BG, foreground=Colors.COMBOBOX_FG, borderwidth=0)
+        style.map("TCombobox", fieldbackground=[("readonly", Colors.COMBOBOX_BG)], selectbackground=[("readonly", Colors.COMBOBOX_BG)])
+
+        # Styl dla przycisków
+        style.configure("TButton", background=Colors.BUTTON_BG, foreground=Colors.BUTTON_FG)
+        style.map("TButton",
+                background=[("active", "#666666"), ("pressed", Colors.BUTTON_BG)],  # Subtelne podświetlenie
+                foreground=[("active", Colors.BUTTON_FG), ("pressed", Colors.BUTTON_FG)])
+
+        # Styl dla tabeli i nagłówków kolumn
+        style.configure("Treeview", background=Colors.PLOT_BG, foreground=Colors.TEXT_FG, fieldbackground=Colors.PLOT_BG)
+        style.configure("Treeview.Heading", background=Colors.BUTTON_BG, foreground=Colors.BUTTON_FG, font=("Helvetica", 10, "bold"))
+        style.map("Treeview.Heading",
+                background=[("active", "#4d4d4d"), ("selected", Colors.BUTTON_BG)],  # Subtelne podświetlenie
+                foreground=[("active", Colors.BUTTON_FG), ("selected", Colors.BUTTON_FG)])
+
+
 
     def load_descriptions(self):
         """Wczytuje opisy miar z pliku YAML."""
@@ -90,6 +109,29 @@ class DataAnalysisApp:
         self.create_left_panel()
         self.create_center_panel()
         self.create_right_panel()
+
+    def load_data_from_csv(self, file_path):
+        """Ładuje dane z pliku CSV przy użyciu Pandas i tworzy tabelę."""
+        # Ładowanie danych z CSV do DataFrame
+        self.df = pd.read_csv(file_path)
+
+        # Usuwanie poprzednich danych z tabeli
+        for col in self.table["columns"]:
+            self.table.heading(col, text="")
+
+        # Ustawianie nowych kolumn
+        self.table["columns"] = list(self.df.columns)
+        for col in self.df.columns:
+            self.table.heading(col, text=col)
+
+        # Usuwanie poprzednich danych wierszy
+        for row in self.table.get_children():
+            self.table.delete(row)
+
+        # Dodawanie wierszy z pliku CSV do tabeli
+        for _, row in self.df.iterrows():
+            self.table.insert("", "end", values=list(row))
+
 
     def create_left_panel(self):
         self.left_panel = ttk.Frame(self.body_frame, width=150)
@@ -125,48 +167,36 @@ class DataAnalysisApp:
         self.description_label.pack(padx=0, pady=10)
 
     def create_footer(self):
-        # Tworzenie kontenera dla stopki z dodatkowym marginesem u dołu
+        # Tworzenie kontenera dla stopki
         self.footer_frame = ttk.Frame(self.root)
-        self.footer_frame.pack(fill=tk.BOTH, expand=False, padx=20, pady=(5, 20))  # Margines z boków i większy odstęp na dole
+        self.footer_frame.pack(fill=tk.BOTH, expand=False, padx=20, pady=(5, 20))
 
-        # Tworzenie ramki dla etykiet wierszy i tabeli
         footer_content_frame = ttk.Frame(self.footer_frame)
         footer_content_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Panel z etykietami wierszy (w siatce, aby wyrównać z tabelą)
-        row_labels_frame = ttk.Frame(footer_content_frame)
-        row_labels_frame.grid(row=0, column=0, sticky="ns")
+        # Konfiguracja kolumn siatki w `footer_content_frame`, aby tabela była wyśrodkowana
+        footer_content_frame.grid_columnconfigure(0, weight=1)  # Lewa pusta kolumna
+        footer_content_frame.grid_columnconfigure(2, weight=1)  # Prawa pusta kolumna
 
-        # Tabela z przykładowymi danymi
-        columns = ("col1", "col2", "col3")
-        self.table = ttk.Treeview(footer_content_frame, columns=columns, show="headings", height=10)  # Większa wysokość
-        self.table.grid(row=0, column=1, sticky="nsew")  # Rozciągnięcie tabeli
-
-        # Rozciągnięcie tabeli na całą dostępną szerokość
-        footer_content_frame.grid_columnconfigure(1, weight=1)
+        # Tworzenie dynamicznej tabeli Treeview dla danych CSV
+        self.table = ttk.Treeview(footer_content_frame, show="headings")
+        self.table.grid(row=0, column=1, padx=10, pady=5)  # Umieszczenie tabeli w środkowej kolumnie
 
         # Stylizacja tabeli, aby pasowała do ciemnego motywu
         style = ttk.Style()
-        style.configure("Treeview", background=Colors.PLOT_BG, foreground=Colors.TEXT_FG, fieldbackground=Colors.PLOT_BG)
-        style.configure("Treeview.Heading", background=Colors.BUTTON_BG, foreground=Colors.BUTTON_FG)
+        style.configure("Treeview", 
+                        background=Colors.PLOT_BG, 
+                        foreground=Colors.TEXT_FG, 
+                        fieldbackground=Colors.PLOT_BG)
+        style.configure("Treeview.Heading", 
+                        background=Colors.BUTTON_BG, 
+                        foreground=Colors.BUTTON_FG, 
+                        font=("Helvetica", 10, "bold"))
         style.map("Treeview", background=[("selected", "gray")])  # Kolor zaznaczenia wiersza
 
-        # Nagłówki tabeli
-        self.table.heading("col1", text="Kolumna 1")
-        self.table.heading("col2", text="Kolumna 2")
-        self.table.heading("col3", text="Kolumna 3")
+        # Przykładowe wywołanie załadowania danych z CSV
+        self.load_data_from_csv("data.csv")  # Ścieżka do pliku .csv
 
-        # Automatyczne dodawanie wierszy w tabeli
-        for i in range(10):  # Dodaje 10 wierszy
-            row_data = (f"Dane {i+1}A", f"Dane {i+1}B", f"Dane {i+1}C")
-            self.table.insert("", "end", values=row_data)
-
-        # Przykładowe etykiety dla wierszy wyrównane w siatce, zaczynające od drugiego wiersza
-        row_labels = [""]
-        row_labels.extend([f"Wiersz {i+1}" for i in range(9)])
-        for index, label_text in enumerate(row_labels):
-            label = ttk.Label(row_labels_frame, text=label_text, background=Colors.PANEL_BG, foreground=Colors.TEXT_FG)
-            label.grid(row=index+1, column=0, sticky="w", padx=5, pady=2)  # Wyrównanie etykiet z wierszami tabeli
 
     def update_description(self, text):
         self.description_label.config(text=text)
