@@ -18,17 +18,36 @@ class Colors:
     PLOT_LINE_COLOR = "cyan"     # Kolor linii wykresów
     AXES_COLOR = "white"         # Kolor osi wykresu
 
+class DataModel:
+    def __init__(self):
+        self.df = None
+        self.descriptions = self.load_descriptions()
+
+    def load_data_from_csv(self, file_path):
+        """Ładuje dane z pliku CSV przy użyciu Pandas."""
+        self.df = pd.read_csv(file_path)
+
+    def load_descriptions(self):
+        """Wczytuje opisy miar z pliku YAML."""
+        with open("descriptions.yaml", "r", encoding="utf-8") as file:
+            return yaml.safe_load(file)
+
 class DataAnalysisApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Analiza danych - Statystyki opisowe")
         self.root.configure(bg=Colors.BACKGROUND)
 
+        # Ustawienia dla pełnego ekranu z możliwością zmiany rozmiaru
+        self.root.geometry(f"{self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}")  # Pełny rozmiar ekranu
+        self.root.state('zoomed')  # Uruchamianie w trybie maksymalizacji
+        self.root.resizable(True, True)  # Umożliwia zmianę rozmiaru okna
+
         # Ustawienia stylu (ciemny motyw)
         self.configure_styles()
 
-        # Ładowanie opisów z pliku YAML
-        self.load_descriptions()
+        # Tworzenie instancji modelu danych
+        self.data_model = DataModel()
 
         # Tworzenie nagłówka
         self.header_frame = ttk.Frame(root)
@@ -46,6 +65,10 @@ class DataAnalysisApp:
         self.combo1.pack(side=tk.LEFT, padx=5)
         self.combo2.pack(side=tk.LEFT, padx=5)
         self.combo3.pack(side=tk.LEFT, padx=5)
+
+        self.combo1.bind("<<ComboboxSelected>>", self.on_combo1_select)
+        self.combo2.bind("<<ComboboxSelected>>", self.on_combo2_select)
+        self.combo3.bind("<<ComboboxSelected>>", self.on_combo3_select)
 
         # Tworzenie ciała aplikacji
         self.create_body_frame()
@@ -79,19 +102,11 @@ class DataAnalysisApp:
                 background=[("active", "#4d4d4d"), ("selected", Colors.BUTTON_BG)],  # Subtelne podświetlenie
                 foreground=[("active", Colors.BUTTON_FG), ("selected", Colors.BUTTON_FG)])
 
-
-
-    def load_descriptions(self):
-        """Wczytuje opisy miar z pliku YAML."""
-        with open("descriptions.yaml", "r", encoding="utf-8") as file:
-            self.descriptions = yaml.safe_load(file)
-
     def add_measure_button(self, name):
         """Dodaje przycisk miary i przypisuje do niego opis z pliku YAML."""
-        description = self.descriptions.get(name, "Brak opisu dla tej miary.")
+        description = self.data_model.descriptions.get(name, "Brak opisu dla tej miary.")
         button = ttk.Button(self.left_panel, text=name, command=lambda: [self.update_description(description), self.update_chart()])
         button.pack(pady=5, fill=tk.X)  # Ustawienie przycisku na pełną szerokość panelu
-
 
     def create_body_frame(self):
         self.body_frame = ttk.Frame(self.root)
@@ -110,28 +125,27 @@ class DataAnalysisApp:
         self.create_center_panel()
         self.create_right_panel()
 
-    def load_data_from_csv(self, file_path):
+    def load_data_from_csv(self, file_path="csvs/titanic.csv"):
         """Ładuje dane z pliku CSV przy użyciu Pandas i tworzy tabelę."""
         # Ładowanie danych z CSV do DataFrame
-        self.df = pd.read_csv(file_path)
-
+        self.data_model.load_data_from_csv(file_path)
+    
         # Usuwanie poprzednich danych z tabeli
         for col in self.table["columns"]:
             self.table.heading(col, text="")
-
+    
         # Ustawianie nowych kolumn
-        self.table["columns"] = list(self.df.columns)
-        for col in self.df.columns:
+        self.table["columns"] = list(self.data_model.df.columns)
+        for col in self.data_model.df.columns:
             self.table.heading(col, text=col)
-
+    
         # Usuwanie poprzednich danych wierszy
         for row in self.table.get_children():
             self.table.delete(row)
-
+    
         # Dodawanie wierszy z pliku CSV do tabeli
-        for _, row in self.df.iterrows():
+        for _, row in self.data_model.df.iterrows():
             self.table.insert("", "end", values=list(row))
-
 
     def create_left_panel(self):
         self.left_panel = ttk.Frame(self.body_frame, width=150)
@@ -141,7 +155,7 @@ class DataAnalysisApp:
         ttk.Label(self.left_panel, text=" ", background=Colors.PANEL_BG).pack(pady=45)
 
         # Tworzenie przycisków na podstawie kluczy z pliku YAML
-        for name in self.descriptions.keys():
+        for name in self.data_model.descriptions.keys():
             self.add_measure_button(name)
 
     def create_center_panel(self):
@@ -170,7 +184,6 @@ class DataAnalysisApp:
         self.description_label.grid(row=1, sticky="nsew", padx=10, pady=10)
         self.right_panel.grid_rowconfigure(1, weight=1)  # Rozciąganie wiersza dla opisu
 
-
     def create_footer(self):
         # Tworzenie kontenera dla stopki
         self.footer_frame = ttk.Frame(self.root)
@@ -183,9 +196,13 @@ class DataAnalysisApp:
         footer_content_frame.grid_columnconfigure(0, weight=1)  # Lewa pusta kolumna
         footer_content_frame.grid_columnconfigure(2, weight=1)  # Prawa pusta kolumna
 
-        # Tworzenie dynamicznej tabeli Treeview dla danych CSV
-        self.table = ttk.Treeview(footer_content_frame, show="headings")
-        self.table.grid(row=0, column=1, padx=10, pady=5)  # Umieszczenie tabeli w środkowej kolumnie
+        # Kontener dla tabeli i pasków przewijania
+        table_container_frame = ttk.Frame(footer_content_frame)
+        table_container_frame.grid(row=0, column=1, sticky="nsew")
+
+        # Dynamiczna tabela Treeview dla danych CSV
+        self.table = ttk.Treeview(table_container_frame, show="headings")
+        self.table.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Stylizacja tabeli, aby pasowała do ciemnego motywu
         style = ttk.Style()
@@ -200,8 +217,20 @@ class DataAnalysisApp:
         style.map("Treeview", background=[("selected", "gray")])  # Kolor zaznaczenia wiersza
 
         # Przykładowe wywołanie załadowania danych z CSV
-        self.load_data_from_csv("data.csv")  # Ścieżka do pliku .csv
+        self.load_data_from_csv()  # Ścieżka do pliku .csv
 
+        # Dynamiczne dopasowanie szerokości kolumn
+        self.adjust_columns_width()
+
+    def adjust_columns_width(self):
+        """Dostosowuje szerokość kolumn na podstawie najdłuższej wartości w kolumnie lub nagłówka."""
+        for col in self.table["columns"]:
+            max_width = max(len(str(value)) for value in self.df[col].astype(str))  # Najdłuższa wartość w kolumnie
+            max_width = max(int(max_width*1.5), int(len(col)*1.25))  # Uwzględnienie długości nagłówka
+            pixel_width = max_width * 8  # Przeliczanie na szerokość w pikselach (zakładając średnią szerokość 8 px na znak)
+            pixel_width = pixel_width if pixel_width <= 240 else 240
+            # Ustawienie szerokości kolumny z minimalną wartością, by uniknąć bardzo wąskich kolumn
+            self.table.column(col, width=pixel_width, anchor="center")  
 
     def update_description(self, text):
         self.description_label.config(text=text)
@@ -229,6 +258,15 @@ class DataAnalysisApp:
 
         self.ax.legend(facecolor=Colors.PLOT_BG, labelcolor=Colors.TEXT_FG)
         self.canvas.draw()
+
+    def on_combo1_select(self, event):
+        print(f"Wybrano: {self.combo1.get()}")
+
+    def on_combo2_select(self, event):
+        print(f"Wybrano: {self.combo2.get()}")
+
+    def on_combo3_select(self, event):
+        print(f"Wybrano: {self.combo3.get()}")
 
 
 # Uruchomienie aplikacji
