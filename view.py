@@ -3,6 +3,7 @@ from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 
+
 from controller import DataController
 
 class Colors:
@@ -40,7 +41,7 @@ class DataView:
         style.theme_use("clam")
         style.configure("TFrame", background=Colors.PANEL_BG)
         style.configure("TButton", background=Colors.BUTTON_BG, foreground=Colors.BUTTON_FG, padding=5)
-        style.configure("TLabel", background=Colors.PANEL_BG, foreground=Colors.TEXT_FG)
+        style.configure("TLabel", background=Colors.PANEL_BG, foreground=Colors.TEXT_FG, font=("Helvetica", 12, "bold"))
         style.configure("TCombobox", fieldbackground=Colors.COMBOBOX_BG, foreground=Colors.COMBOBOX_FG, borderwidth=0)
         style.map("TCombobox", fieldbackground=[("readonly", Colors.COMBOBOX_BG)], selectbackground=[("readonly", Colors.COMBOBOX_BG)])
         style.configure("Treeview", background=Colors.PLOT_BG, foreground=Colors.TEXT_FG, fieldbackground=Colors.PLOT_BG)
@@ -69,7 +70,7 @@ class DataView:
         self.combo2 = ttk.Combobox(self.header_frame, values=["Opcja A", "Opcja B", "Opcja C"], state="readonly")
         self.combo3 = ttk.Combobox(self.header_frame, values=["Parametr X", "Parametr Y", "Parametr Z"], state="readonly")
 
-        self.data_frame_selector.set("Wybierz opcję 1")
+        self.data_frame_selector.set("titanic.csv")
         self.combo2.set("Wybierz opcję 2")
         self.combo3.set("Wybierz parametr")
 
@@ -84,8 +85,8 @@ class DataView:
     def on_data_frame_selector_select(self, event):
         self.table.destroy()
         self.table = ttk.Treeview(self.footer_content_frame, show="headings")
-        self.table.grid(row=0, column=1, padx=10, pady=5)  # Umieszczenie tabeli w środkowej kolumnie
-        
+        self.table.grid(row=0, column=1, padx=10, pady=5) 
+
         self.controller.on_data_frame_selector_select(self.table, self.data_frame_selector.get())
 
     def on_combo2_select(self, event):
@@ -120,7 +121,7 @@ class DataView:
     
     def add_measure_button(self, name):
         description = self.descriptions.get(name, "Brak opisu dla tej miary.")
-        button = ttk.Button(self.left_panel, text=name, command=lambda: [self.update_description(description), self.update_chart()])
+        button = ttk.Button(self.left_panel, text=name, command=lambda: [self.update_description(name, description), self.update_chart()])
         button.pack(pady=5, fill=tk.X)  # Ustawienie przycisku na pełną szerokość panelu
 
     def create_center_panel(self):
@@ -143,7 +144,7 @@ class DataView:
 
         self.description_label = ttk.Label(self.right_panel, text="Wybierz miarę, aby zobaczyć opis.", wraplength=180, justify=tk.LEFT)
         self.description_label.grid(row=1, sticky="nsew", padx=10, pady=10)
-        self.right_panel.grid_rowconfigure(1, weight=1)  # Rozciąganie wiersza dla opisu
+        self.right_panel.grid_rowconfigure(1, weight=2)  # Rozciąganie wiersza dla opisu
 
     def create_footer(self):
         self.footer_frame = ttk.Frame(self.root)
@@ -171,9 +172,14 @@ class DataView:
         style.map("Treeview", background=[("selected", "gray")])  # Kolor zaznaczenia wiersza
 
         self.controller.update_table(self.table, "csvs/titanic.csv")  # Ścieżka do pliku .csv
+    
+    def update_description(self, option_name, new_text):
+        label_width = self.description_label.winfo_width()
+        label_height = self.description_label.winfo_height()
+    
+        self.description_label.config(text=new_text)
 
-    def update_description(self, text):
-        self.description_label.config(text=text)
+        self.description_label.update_idletasks()
 
     def configure_plot(self, title="Przykładowy wykres", xlabel="Oś X", ylabel="Oś Y"):
         self.fig.clear()

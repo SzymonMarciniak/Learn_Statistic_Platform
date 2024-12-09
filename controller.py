@@ -13,13 +13,9 @@ class DataController:
         self.adjust_columns_width(table, df)
 
     def create_df(self, table, df):
-
-        # Usuwanie poprzednich danych z tabeli
-        # for col in table["columns"]:
-        #     table.heading(col, text="")
     
         table["columns"] = list(df.columns)
-        # Ustawianie nowych kolumn
+
         for col in df.columns:
             table.heading(col, text=col)
     
@@ -33,13 +29,11 @@ class DataController:
     
     def adjust_columns_width(self, table, df):
         for col in table["columns"]:
-            print(f"Kolumna: {col}")
             max_width = max(len(str(value)) for value in df[col].astype(str))  # Najdłuższa wartość w kolumnie
             max_width = max(int(max_width*1.5), int(len(col)*1.25))  # Uwzględnienie długości nagłówka
             pixel_width = max_width * 8  # Przeliczanie na szerokość w pikselach (zakładając średnią szerokość 8 px na znak)
             pixel_width = pixel_width if pixel_width <= 240 else 240
             pixel_width = pixel_width if pixel_width >= 50 else 50
-            print(f"Szerokość: {pixel_width}")
             table.column(col, width=pixel_width, anchor="center", stretch=False)  
 
     def on_data_frame_selector_select(self, table, data):
