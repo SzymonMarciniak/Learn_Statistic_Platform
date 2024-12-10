@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import PhotoImage, ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 
@@ -30,6 +30,7 @@ class DataView:
         self.controller = DataController()
 
         self.descriptions = self.controller.model.load_descriptions()
+        self.math_formulas_paths = self.controller.model.load_formulas_paths()
 
         self.configure_styles()
         self.create_header()
@@ -126,7 +127,7 @@ class DataView:
 
     def create_center_panel(self):
         self.center_panel = ttk.Frame(self.body_frame)
-        self.center_panel.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
+        self.center_panel.grid(row=0, column=1, sticky="nsew", padx=(5,0), pady=5)
         ttk.Label(self.center_panel, text=" ", background=Colors.PANEL_BG).pack(pady=20)
 
         self.fig, self.ax = plt.subplots(facecolor=Colors.PLOT_BG)
@@ -142,8 +143,8 @@ class DataView:
 
         ttk.Label(self.right_panel, text=" ", background=Colors.PANEL_BG).grid(row=0, sticky="n")
 
-        self.description_label = ttk.Label(self.right_panel, text="Wybierz miarę, aby zobaczyć opis.", wraplength=180, justify=tk.LEFT)
-        self.description_label.grid(row=1, sticky="nsew", padx=10, pady=10)
+        self.description_label = ttk.Label(self.right_panel, text="Wybierz miarę, aby zobaczyć opis.", wraplength=300, justify=tk.LEFT, compound="bottom")
+        self.description_label.grid(row=1, sticky="nswe", padx=(0,10), pady=10)
         self.right_panel.grid_rowconfigure(1, weight=2)  # Rozciąganie wiersza dla opisu
 
     def create_footer(self):
@@ -176,10 +177,27 @@ class DataView:
     def update_description(self, option_name, new_text):
         label_width = self.description_label.winfo_width()
         label_height = self.description_label.winfo_height()
-    
-        self.description_label.config(text=new_text)
+        self.remove_image()
+
+        text_header = f"{option_name.upper()}\n\n"
+        text_body = f"{new_text}\n"
+        upper_text = f"{text_header}{text_body}"
+        self.description_label.config(text=upper_text)
+
+        formula_path = self.math_formulas_paths.get(option_name, None)
+        if formula_path:
+            self.formula_image = PhotoImage(file=formula_path)
+            self.description_label.config(image=self.formula_image)
+
+
+
 
         self.description_label.update_idletasks()
+
+    def remove_image(self):
+        if hasattr(self, 'formula_image') and self.formula_image is not None:
+            self.description_label.config(image="")  # Usunięcie obrazu
+            self.formula_image = None  # Usunięcie referencji do obrazu
 
     def configure_plot(self, title="Przykładowy wykres", xlabel="Oś X", ylabel="Oś Y"):
         self.fig.clear()
