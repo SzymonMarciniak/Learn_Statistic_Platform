@@ -68,17 +68,40 @@ class DataView:
         self.header_frame = ttk.Frame(self.root)
         self.header_frame.pack(fill=tk.X, padx=10, pady=5)
 
-        self.data_frame_selector = ttk.Combobox(self.header_frame, values=self.controller.get_csv_files(), state="readonly")
-        self.combo2 = ttk.Combobox(self.header_frame, values=["Opcja A", "Opcja B", "Opcja C"], state="readonly")
-        self.combo3 = ttk.Combobox(self.header_frame, values=["Parametr X", "Parametr Y", "Parametr Z"], state="readonly")
+        self.header_frame.grid_columnconfigure(0, weight=1)
+        self.header_frame.grid_columnconfigure(1, weight=1)
+        self.header_frame.grid_columnconfigure(2, weight=1)
+
+        self.comboboxs_left_frame = ttk.Frame(self.header_frame)
+        self.comboboxs_left_frame.grid(row=0, column=0, columnspan=1, sticky="w", pady=(5, 10)) 
+        
+        self.comboboxs_center_frame = ttk.Frame(self.header_frame)
+        self.comboboxs_center_frame.grid(row=0, column=1, columnspan=1, sticky="w", pady=(5, 10)) 
+
+        combobox_font = ("Helvetica", 10)
+        label_font = ("Helvetica", 12, "bold")
+
+        # Etykieta i lista dla wyboru pliku
+        self.label_data_frame = ttk.Label(self.comboboxs_left_frame, text="Wybierz plik:", font=label_font)
+        self.label_data_frame.grid(row=0, column=0, padx=15, pady=(0, 5), sticky="w") 
+        self.data_frame_selector = ttk.Combobox(self.comboboxs_left_frame, values=self.controller.get_csv_files(), state="readonly", font=combobox_font)
+        self.data_frame_selector.grid(row=1, column=0, padx=15, pady=(0, 10), sticky="ew")
+
+        # Etykieta i lista dla opcji
+        self.label_combo2 = ttk.Label(self.comboboxs_center_frame, text="Wybierz opcję:", font=label_font)
+        self.label_combo2.grid(row=0, column=0, padx=15, pady=(0, 5), sticky="n")
+        self.combo2 = ttk.Combobox(self.comboboxs_center_frame, values=["Opcja A", "Opcja B", "Opcja C"], state="readonly", font=combobox_font)
+        self.combo2.grid(row=1, column=0, padx=15, pady=(0, 10), sticky="ew")
+
+        # Etykieta i lista dla parametrów
+        self.label_combo3 = ttk.Label(self.comboboxs_center_frame, text="Wybierz parametr:", font=label_font)
+        self.label_combo3.grid(row=0, column=1, padx=15, pady=(0, 5), sticky="n")
+        self.combo3 = ttk.Combobox(self.comboboxs_center_frame, values=["Parametr X", "Parametr Y", "Parametr Z"], state="readonly", font=combobox_font)
+        self.combo3.grid(row=1, column=1, padx=15, pady=(0, 10), sticky="ew")
 
         self.data_frame_selector.set("titanic.csv")
         self.combo2.set("Wybierz opcję 2")
         self.combo3.set("Wybierz parametr")
-
-        self.data_frame_selector.pack(side=tk.LEFT, padx=5)
-        self.combo2.pack(side=tk.LEFT, padx=5)
-        self.combo3.pack(side=tk.LEFT, padx=5)
 
         self.data_frame_selector.bind("<<ComboboxSelected>>", self.on_data_frame_selector_select)
         self.combo2.bind("<<ComboboxSelected>>", self.on_combo2_select)
