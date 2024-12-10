@@ -33,6 +33,7 @@ class DataView:
         self.math_formulas_paths = self.controller.model.load_formulas_paths()
 
         self.configure_styles()
+        self.create_menu()
         self.create_header()
         self.create_body_frame()
         self.create_footer()
@@ -82,6 +83,48 @@ class DataView:
         self.data_frame_selector.bind("<<ComboboxSelected>>", self.on_data_frame_selector_select)
         self.combo2.bind("<<ComboboxSelected>>", self.on_combo2_select)
         self.combo3.bind("<<ComboboxSelected>>", self.on_combo3_select)
+
+    def create_menu(self):
+        menu_bar = tk.Menu(self.root)
+        self.root.config(menu=menu_bar)
+
+        file_menu = tk.Menu(menu_bar, tearoff=0)
+        # file_menu.add_command(label="Nowy", command=self.new_file)
+        # file_menu.add_command(label="Otwórz", command=self.open_file)
+        # file_menu.add_command(label="Zapisz", command=self.save_file)
+        # file_menu.add_separator()
+        file_menu.add_command(label="Wyjdź", command=self.exit_app)
+        menu_bar.add_cascade(label=" Plik   ", menu=file_menu)
+
+        options_menu = tk.Menu(menu_bar, tearoff=0)
+        options_menu.add_command(label="Brak   ", command=self.open_preferences)
+        menu_bar.add_cascade(label="   Opcje   ", menu=options_menu)
+
+        contact_menu = tk.Menu(menu_bar, tearoff=0)
+        contact_menu.add_command(label="Kontakt", command=self.about_app)
+        contact_menu.add_command(label="Pomoc", command=self.help)
+        menu_bar.add_cascade(label="   Kontakt   ", menu=contact_menu)
+
+    def new_file(self):
+        print("Nowy plik został utworzony.")
+
+    def open_file(self):
+        print("Otwórz plik został wybrany.")
+
+    def save_file(self):
+        print("Zapisz plik został wybrany.")
+
+    def exit_app(self):
+        self.root.quit()
+
+    def open_preferences(self):
+        print("Preferencje zostały otwarte.")
+
+    def about_app(self):
+        print("Informacje o aplikacji.")
+
+    def help(self):
+        print("Pomoc została otwarta.")
 
     def on_data_frame_selector_select(self, event):
         self.table.destroy()
